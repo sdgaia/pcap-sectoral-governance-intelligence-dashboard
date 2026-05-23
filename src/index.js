@@ -3,81 +3,28 @@ import express from 'express';
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8" />
-      <title>PCAP Sectoral Governance Intelligence Dashboard</title>
-      <style>
-        body {
-          margin: 0;
-          padding: 30px;
-          background: #f3f5fb;
-          font-family: Arial, sans-serif;
-          color: #0f172a;
-        }
-        .card {
-          background: white;
-          border-radius: 18px;
-          padding: 24px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-          margin-bottom: 20px;
-        }
-        h1 {
-          font-size: 52px;
-          margin: 0 0 10px 0;
-        }
-        .sub {
-          color: #64748b;
-          font-size: 20px;
-        }
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 18px;
-          margin-top: 24px;
-        }
-        .metric {
-          font-size: 58px;
-          font-weight: 800;
-        }
-        .green { color: #16a34a; }
-        .blue { color: #2563eb; }
-        .orange { color: #f97316; }
-        .red { color: #dc2626; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h1>🧠 PCAP Sectoral Governance Intelligence Dashboard</h1>
-        <div class="sub">Recursive Strategic Intelligence • Referential Coherence • Governance Architecture</div>
-      </div>
+const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY || process.env.AIRTABLE || '';
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || 'app1ulAFNbDuizG4n';
+const AIRTABLE_TABLE = process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE || process.env.AIRTABLE_SECTORAL_STRATEGIES || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_ID || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_REF || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_KEY || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_VALUE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME_VALUE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME_KEY || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME_REF || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME_ID || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME_LABEL || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_LABEL || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_TITLE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_ID || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_KEY || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_VALUE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_REF || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_LABEL || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_TITLE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_TEXT || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_STRING || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_CODE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_SLUG || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_VALUE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_KEY || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_REF || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_ID || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_LABEL || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_TITLE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_TEXT || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_STRING || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_CODE || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_FIELD_NAME_SLUG || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE_NAME || process.env.AIRTABLE_SECTORAL_STRATEGIES_TABLE || 'Sectoral Strategies';
 
-      <div class="grid">
-        <div class="card">
-          <div>Governance Intelligence Score</div>
-          <div class="metric green">82%</div>
-        </div>
-        <div class="card">
-          <div>Sectoral Aggregation Intelligence</div>
-          <div class="metric blue">78%</div>
-        </div>
-        <div class="card">
-          <div>Intrinsic OCI-D</div>
-          <div class="metric green">84%</div>
-        </div>
-        <div class="card">
-          <div>Intrinsic OCI-O</div>
-          <div class="metric orange">68%</div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `);
-});
+function esc(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function raw(f,n){const keys=Array.isArray(n)?n:[n];for(const k of keys){const v=f?.[k];if(v!==undefined&&v!==null&&v!=='')return v;}return null;}
+function text(v,fb='—'){if(Array.isArray(v))return v.map(x=>x?.name||x?.id||x).filter(Boolean).join(', ')||fb;if(v===undefined||v===null||v==='')return fb;if(typeof v==='object')return v.name||v.id||fb;return String(v);}
+function pick(f,n,fb='—'){return text(raw(f,n),fb);}
+function arr(v){if(Array.isArray(v))return v.map(x=>x?.name||x?.id||x).filter(Boolean);if(!v)return[];return String(v).split(/;|\n/).map(x=>x.trim()).filter(Boolean);}
+function num(v){if(Array.isArray(v))return v.length?num(v[0]):null;if(v===undefined||v===null||v==='')return null;const n=Number(String(v).replace('%','').trim());if(Number.isNaN(n))return null;return n>1&&n<=100?n/100:n;}
+function pct(v){const n=num(v);return n===null?'—':`${Math.round(n*100)}%`;}
+function avg(xs){const a=xs.map(num).filter(v=>v!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
+function color(v,invert=false){const n=num(v);if(n===null)return'#94a3b8';if(invert){if(n<=.2)return'#16a34a';if(n<=.4)return'#2563eb';if(n<=.6)return'#f97316';return'#dc2626';}if(n>=.8)return'#16a34a';if(n>=.6)return'#2563eb';if(n>=.4)return'#f97316';return'#dc2626';}
+function label(v,invert=false){const n=num(v);if(n===null)return'Not assessed';if(invert){if(n<=.2)return'Low Exposure';if(n<=.4)return'Moderate Exposure';if(n<=.6)return'High Exposure';return'Severe Exposure';}if(n>=.8)return'Strong';if(n>=.6)return'Moderate';if(n>=.4)return'Fragile';return'Critical';}
+async function getRecord(recordId){if(!recordId||!AIRTABLE_API_KEY)return null;const formula=`RECORD_ID()="${recordId}"`;const qs=new URLSearchParams({filterByFormula:formula,maxRecords:'1',cellFormat:'string',timeZone:'Europe/Paris',userLocale:'en-us'});const url=`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE)}?${qs}`;const r=await fetch(url,{headers:{Authorization:`Bearer ${AIRTABLE_API_KEY}`}});if(!r.ok)return null;const d=await r.json();return d.records?.[0]?.fields||null;}
+function demo(){return {'Sectoral Strategy Name':'Sustainable Agriculture & Food Systems Strategy','Sector':'Agriculture / Food','Country':'Ghana','Lead Authorities':'MoFA','National Strategy':'NS-1','Governance Intelligence Score':.82,'Sectoral Aggregation Intelligence':.78,'Intrinsic OCI-D':.84,'Intrinsic OCI-O':.68,'Strategic Fragmentation Index':.28,'Sectoral Operational Governance':.81,'C1 Strategic Alignment':.90,'C2 Policy Translation':.85,'C3 Sectoral Architecture':.75,'C4 Strategic Monitoring':.70,'C5 Strategic Escalation':.68,'C6 Strategic Auditability':.82,'Certification Readiness':.76,'Current Document':'Sustainable Agriculture & Food Systems Strategy','Document Title':'Ghana Coordinated Programme of Economic and Social Development','Reference Documents':'Regional Policy Guideline on Agroecology and Circular Food Systems; RPG Agroecology / Ghana Coordinated Programme','Comparison Level':'National → Sectoral Strategy','Assessed Entity':'Ministry of Food and Agriculture','Horiz Coherence Assessibility':'Assessable','Number of Comparable Entities':2,'c1 Document Coherence':'C1 DC-1, C1 DC-2','Policy Translation Narrative':'Strategic intelligence architecture is operationally coherent but monitoring propagation remains partially unstable.','Certification Outlook':'Certification readiness is promising, subject to stronger monitoring evidence and escalation traceability.','Reviewer Focus':'Review weak monitoring claims, evidence sufficiency, policy translation responsibilities and cross-policy propagation risks.','Top Intelligence Strengths':'Strong alignment with national and regional priorities; coherent policy translation architecture; robust documentary foundations.','Key Intelligence Gaps':'Monitoring intelligence remains uneven; escalation logic is not fully translated into operational protocols; resource adequacy remains weak for smallholder support.'};}
+function build(f){const c1=raw(f,['C1 Strategic Alignment','C1 Score']);const c2=raw(f,['C2 Policy Translation','C2 Score']);const c3=raw(f,['C3 Sectoral Architecture','C3 Score']);const c4=raw(f,['C4 Strategic Monitoring','C4 Score']);const c5=raw(f,['C5 Strategic Escalation','C5 Score']);const c6=raw(f,['C6 Strategic Auditability','C6 Score']);const comps=[c1,c2,c3,c4,c5,c6];const intel=num(raw(f,['Governance Intelligence Score','Final Sectoral Strategy Coherence Score']))??avg(comps)??.82;const op=num(raw(f,['Sectoral Operational Governance','Sector Operational Governance Score','Operational Governance Score']))??.81;const docs=[...arr(raw(f,'Current Document')),...arr(raw(f,'Document Title')),...arr(raw(f,'Reference Documents')),...arr(raw(f,'Reference Document'))];return {name:pick(f,['Sectoral Strategy Name','Strategy Name'],'Sustainable Agriculture & Food Systems Strategy'),sector:pick(f,'Sector','Agriculture / Food'),country:pick(f,'Country','Ghana'),lead:pick(f,['Lead Authorities','Lead Authority'],'MoFA'),national:pick(f,['National Strategy','National Strategies'],'NS-1'),intel,op,aggregation:num(raw(f,['Sectoral Aggregation Intelligence','Sectoral Strategy Aggregation Coherence Score']))??.78,ociD:num(raw(f,['Intrinsic OCI-D','OCI-D']))??.84,ociO:num(raw(f,['Intrinsic OCI-O','OCI-O']))??.68,frag:num(raw(f,['Strategic Fragmentation Index','Fragmentation Index']))??.28,cert:num(raw(f,['Certification Readiness','Certification Feasibility']))??.76,comps,docs:[...new Set(docs)].slice(0,6),current:pick(f,'Current Document','Sustainable Agriculture & Food Systems Strategy'),comparison:pick(f,'Comparison Level','National → Sectoral Strategy'),owner:pick(f,'Assessed Entity','Ministry of Food and Agriculture'),horiz:pick(f,'Horiz Coherence Assessibility','Assessable'),comparable:pick(f,'Number of Comparable Entities','2'),doccoh:pick(f,'c1 Document Coherence','C1 DC-1, C1 DC-2'),summary:pick(f,'Policy Translation Narrative','Strategic intelligence architecture is operationally coherent but monitoring propagation remains partially unstable.'),certText:pick(f,'Certification Outlook','Certification readiness is promising, subject to stronger escalation traceability.'),reviewer:pick(f,'Reviewer Focus','Review weak monitoring claims and evidence sufficiency.'),strengths:pick(f,'Top Intelligence Strengths','Strong alignment with national and regional priorities; coherent policy translation architecture; robust documentary foundations.'),gaps:pick(f,'Key Intelligence Gaps','Monitoring intelligence remains uneven; escalation logic is not fully translated into operational protocols.')};}
+function gauge(title,v,invert=false){const n=num(v)??0;const deg=-90+Math.round(n*180);const c=color(v,invert);return `<div class="card kpi"><h3>${esc(title)} <span>i</span></h3><div class="gauge"><div class="face"><div class="needle" style="transform:rotate(${deg}deg)"></div><div class="hub"></div><b style="color:${c}">${pct(v)}</b><em style="color:${c}">${label(v,invert)}</em></div></div><div class="scale"><small>0%</small><small>100%</small></div></div>`;}
+function bar(name,v,sub){return `<div class="barrow"><div><b>${esc(name)}</b><small>${esc(sub)}</small></div><div class="track"><i style="width:${Math.round((num(v)??0)*100)}%;background:${color(v)}"></i></div><strong>${pct(v)}</strong></div>`;}
+function list(x,icon){return String(x||'').split(/;|\n/).map(s=>s.trim()).filter(Boolean).map(s=>`<p>${icon} ${esc(s)}</p>`).join('')||'<p>—</p>';}
+function html(d){const names=['C1 Strategic Alignment','C2 Policy Translation','C3 Sectoral Architecture','C4 Strategic Monitoring','C5 Strategic Escalation','C6 Strategic Auditability'];const subs=['Strategic alignment','Policy translation','Sector architecture','Strategic monitoring','Strategic escalation','Strategic auditability'];const vals=d.comps.map(v=>num(v)??0);const wi=vals.indexOf(Math.min(...vals));const gap=Math.abs(Math.round(d.op*100)-Math.round(d.intel*100));return `<!doctype html><html><head><meta charset="utf-8"><title>PCAP Sectoral Governance Intelligence</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#0f172a;font-family:Arial,sans-serif;padding:18px}.page{max-width:1560px;margin:auto}.card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:18px;box-shadow:0 1px 8px rgba(15,23,42,.05)}.head{display:flex;justify-content:space-between;margin-bottom:16px}.title{font-size:34px;font-weight:900}.sub{color:#64748b;margin-top:8px}.meta{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px}.grid{display:grid;gap:14px}.g5{grid-template-columns:repeat(5,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}.mb{margin-bottom:16px}.kpi{min-height:210px}h3{font-size:15px;margin:0 0 10px}.gauge{height:125px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}.face{position:relative;width:218px;height:109px;border-radius:218px 218px 0 0;background:conic-gradient(from 270deg,#dc2626 0 45deg,#f97316 45deg 72deg,#2563eb 72deg 144deg,#16a34a 144deg 180deg,#e5e7eb 180deg)}.face:after{content:"";position:absolute;left:34px;top:34px;width:150px;height:75px;border-radius:150px 150px 0 0;background:white}.needle{position:absolute;left:107px;bottom:0;width:4px;height:82px;background:#111827;transform-origin:bottom center;z-index:4}.hub{position:absolute;left:97px;bottom:-11px;width:24px;height:24px;border-radius:50%;background:#111827;border:5px solid white;z-index:5}.face b{position:absolute;left:0;right:0;bottom:27px;text-align:center;font-size:34px;font-weight:900;z-index:6}.face em{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-size:12px;font-weight:900;font-style:normal;z-index:6}.scale{display:flex;justify-content:space-between;color:#64748b;font-size:12px}.assess{background:linear-gradient(135deg,#f8fafc,#eff6ff)}.mini{background:white;border:1px solid #dbeafe;border-radius:10px;padding:12px}.metric{font-size:30px;font-weight:900;margin:6px 0}.tag{display:inline-block;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:7px 10px;margin:4px;font-weight:800;font-size:12px}.barrow{display:grid;grid-template-columns:210px 1fr 50px;gap:12px;align-items:center;margin:12px 0}.barrow small{display:block;color:#64748b;font-size:11px}.track{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}.track i{display:block;height:100%;border-radius:999px}.weak{border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:10px;padding:12px;font-weight:900;margin-top:14px;display:flex;justify-content:space-between}.docgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.doc{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px}.doc b{display:block;margin-bottom:5px}.chain{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.node{background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:12px;font-weight:800}.arrow{font-size:26px;color:#2563eb;font-weight:900}.box{border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px}@media(max-width:1100px){.g5,.g3,.g2,.docgrid{grid-template-columns:1fr}.head{display:block}}</style></head><body><div class="page"><div class="head card"><div><div><b>🧠 Sectoral Governance Intelligence Dashboard</b></div><div class="title">${esc(d.name)}</div><div class="sub">Recursive Strategic Intelligence • Referential Coherence • Governance Architecture</div><div class="meta"><span>🏷️ ${esc(d.sector)}</span><span>🇬🇭 ${esc(d.country)}</span><span>🏛️ ${esc(d.lead)}</span><span>📄 ${esc(d.national)}</span></div></div><div>📅 Updated: ${new Date().toLocaleDateString()}</div></div><div class="grid g5 mb">${gauge('Governance Intelligence Score',d.intel)}${gauge('Sectoral Aggregation Intelligence',d.aggregation)}${gauge('Intrinsic OCI-D',d.ociD)}${gauge('Intrinsic OCI-O',d.ociO)}${gauge('Strategic Fragmentation Index',d.frag,true)}</div><div class="card assess mb"><h2>🧠 Overall Sector-Level Governance Assessment</h2><div class="grid g3"><div class="mini">⚙️ Sectoral Operational Governance<div class="metric" style="color:${color(d.op)}">${pct(d.op)}</div>${label(d.op)}</div><div class="mini">🧠 Sectoral Governance Intelligence<div class="metric" style="color:${color(d.intel)}">${pct(d.intel)}</div>${label(d.intel)}</div><div class="mini">⚖️ Strategic–Operational Gap<div class="metric">${gap}%</div>${gap<=10?'🟢 Aligned':gap<=25?'🟡 Moderate Drift':'🔴 Critical Disconnect'}</div></div><p><b>✅ Coherent Sectoral Governance System</b></p><p>${esc(d.summary)}</p><span class="tag">🟢 Stable Translation Chain</span><span class="tag">🔵 Strong Referential Continuity</span><span class="tag">🟠 Monitoring Drift</span><span class="tag">🔴 Escalation Weakness</span></div><div class="grid g2 mb"><div class="card"><h2>Recursive Governance Intelligence Components</h2>${names.map((n,i)=>bar(n,d.comps[i],subs[i])).join('')}<div class="weak"><span>Weakest Intelligence Layer<br>${esc(names[wi])}</span><span>${Math.round(vals[wi]*100)}%</span></div></div><div class="card"><h2>Governance Intelligence Layer</h2>${names.map((n,i)=>bar(n,d.comps[i],['Stable translation chain','Referential continuity','Architecture maturity','Monitoring propagation','Escalation logic','Auditability'][i])).join('')}</div></div><div class="grid g3 mb"><div class="card"><h2>Referential Mapping Chain</h2><div class="chain"><div class="node">🏛️ National Strategy</div><div class="arrow">➜</div><div class="node">🌾 Sector Strategy</div><div class="arrow">➜</div><div class="node">📦 Programs</div><div class="arrow">➜</div><div class="node">⚙️ Operational Layer</div></div></div><div class="card">${gauge('Certification Feasibility',d.cert)}</div><div class="card"><h2>Propagation Signal</h2><div class="box"><b>Strongest propagation</b><br>PRG-4 Biomass Control — 64%</div><div class="box"><b>Weakest propagation</b><br>PRG-3 Nutrition & Youth — 52%</div><span class="tag">🟠 Monitoring propagation risk</span></div></div><div class="card mb"><h2>📚 Strategic Documents Used in Assessment</h2><div class="docgrid"><div class="doc"><b>Primary strategic document</b>${esc(d.current)}</div><div class="doc"><b>Recursive governance layer</b>${esc(d.comparison)}</div><div class="doc"><b>Governance owner</b>${esc(d.owner)}</div><div class="doc"><b>Horizontal intelligence visibility</b>${esc(d.horiz)}</div>${d.docs.map((x,i)=>`<div class="doc"><b>${i?'Reference':'Primary'}</b>${esc(x)}<br><small>Contributes to: C1 • C2 • C4 • C6</small></div>`).join('')}</div><p><span class="tag">📄 ${d.docs.length} linked documents</span><span class="tag">🔁 Recursive references</span><span class="tag">📡 Propagation chains</span><span class="tag">🔗 ${esc(d.doccoh)}</span></p></div><div class="grid g2"><div class="card"><h2>Linked Program Governance Intelligence Benchmarking</h2><div class="box">PRG-1 Agroecology Pilot — 78% — Moderate</div><div class="box">PRG-2 Circular Food Systems — 72% — Moderate</div><div class="box">PRG-3 Nutrition & Youth — 52% — Fragile</div></div><div class="card"><h2>Governance Intelligence Synthesis</h2><div class="box"><b>Executive Summary</b><br>${esc(d.summary)}</div><div class="box"><b>Certification Outlook</b><br>${esc(d.certText)}</div><div class="box"><b>Reviewer Focus</b><br>${esc(d.reviewer)}</div><div class="box"><b>Top Intelligence Strengths</b>${list(d.strengths,'✅')}</div><div class="box"><b>Key Intelligence Gaps</b>${list(d.gaps,'⚠️')}</div></div></div></div></body></html>`;}
 
-app.listen(port, () => {
-  console.log(`SIG dashboard running on port ${port}`);
-});
+app.get('/', async (req,res)=>{const f=await getRecord(req.query.recordId).catch(()=>null) || demo();res.type('html').send(html(build(f)));});
+app.get('/api', async (req,res)=>{const f=await getRecord(req.query.recordId).catch(()=>null) || demo();res.type('html').send(html(build(f)));});
+app.listen(port,()=>console.log(`SIG dashboard running on ${port}`));
